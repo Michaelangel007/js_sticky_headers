@@ -7,8 +7,10 @@
     position  : fixed; /* force to be at top of page */
 
     /* Optional -- remaining styles should match the .sticky  header */
+    margin : 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
     text-align:   center;
-    width     :     99%;
+    width     :     100%;
 }
 .sticky { /* POTENTIAL sticky header; See: .fixed, .sticky */
     /* Designate header as being a "sticky" header -- if it scrolls off the top of the page, it will "stick" to the top of the page until the next sticky header reaches it.
@@ -18,8 +20,16 @@
     position  : relative; /* when active will change parent div to be fixed */
 
     /* Optional -- remaining styles should also match the .active header */
+    margin : 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
     text-align:   center;
-    width     :      99%;
+    width     :     100%;
+}
+body { /* headers won't extend to page edge due to margins and paddding */
+    background-color: #080;
+    margin : 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+    width           : 100%;
 }
 .debug {
     z-index         :    1;
@@ -33,7 +43,6 @@
     border-radius: 8px;
     padding      : 1px;
 }
-
 </style>
 <script>
     // ========== Utility ==========
@@ -140,11 +149,11 @@
         */
         var _aHeaders = []; // array of Sticky objects
 
-        var doLoad = function( classSticky )
+        var doLoad = function( stickyClassName )
         {
             // iterate over each element of class 'classSticky' ("sticky")
             // http://stackoverflow.com/questions/5897122/accessing-elements-by-type-on-javascript
-            var aHeaders = document.getElementsByClassName( classSticky );
+            var aHeaders = document.getElementsByClassName( stickyClassName );
             var nHeaders = aHeaders.length;
             var iHeader  = 0;
             var tHeader  ;
@@ -261,8 +270,12 @@ console.log( "done!" );
     }
 </script>
 <body onload='onLoad();'>
-<div class='debug' id='debug'></div>
-<pre>
+<!--
+Do NOT span tags, such as <pre> .. <sticky> <sticky> .. </pre>
+Otherwise the layout will be incorrect
+a) The sticky won't appear at the correct top location
+b) The first sticky will cause the below content to "skip".
+-->
 <div class='sticky'><hr>Header A<hr></div>
 <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Tu vero, inquam, ducas licet, si sequetur; Quod quidem iam fit etiam in Academia. Ratio quidem vestra sic cogit. Quid Zeno? Tu vero, inquam, ducas licet, si sequetur; Qui est in parvis malis. Duo Reges: constructio interrete. Non laboro, inquit, de nomine. </p>
 
@@ -340,7 +353,8 @@ console.log( "done!" );
 
 <div class='sticky'><hr>Header Z<hr></div>
 <p>Quorum sine causa fieri nihil putandum est. Erat enim Polemonis. Putabam equidem satis, inquit, me dixisse. Recte dicis; Quare attende, quaeso. </p>
-</pre>
+
+<div class='debug' id='debug'></div>
 
 </body>
 

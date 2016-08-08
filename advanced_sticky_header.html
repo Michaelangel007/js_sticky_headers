@@ -22,9 +22,9 @@
     width     :      99%;
 }
 .debug {
-    z-index :    1;
-    position:fixed;
-    top     :  0px;
+    z-index         :    1;
+    position        :fixed;
+    top             :  0px;
     color           : #000;
     background-color: #FFF;
 
@@ -127,19 +127,18 @@
                 tHeader = aHeaders[ iHeader ];
 
                 var obj = wrap( tHeader, 'div' );
-                var par = tHeader.parentNode;
-                par.setAttribute( 'class', '_sticky_header_' ); // dummy class so we know is auto-inserted
+                var div = tHeader.parentNode;
+                div.setAttribute( 'class', '_sticky_header_' ); // dummy class so we know is auto-inserted
 
-                var y   = offset( par ).top;
-                var h   = outerHeight( obj ); //.clientHeight;
+                var y   = offset( div ).top;
+                var h   = obj.clientHeight; // outerHeight( obj );
 
-                par.style.height = h + "px";
-
+                div.style.height = h + "px";
 
                 var sticky = {
                     height: h,  // original height
                     top   : y,  // original position
-                    elem  : par // injected parent that we will adjust styles on
+                    elem  : div // injected parent that we will adjust styles on
                 };
                 _aHeaders.push( sticky ); // stash in array so when we scroll we can adjust ALL the sticky header's y position
             }
@@ -168,19 +167,20 @@ console.log( "Sticky Headers detected: " + _aHeaders.length );
                 var h      = sticky.height;
                 var y      = sticky.top;
 
-                if (y < winTop) // we need (y-h) otherwise will scroll off top by the height
+                if (y < winTop)
                     iLastVis = iHeader;
-                if (iFirstVis < 0)
-                    if (y >= winTop)
-                        iFirstVis = iHeader;
+// DEBUG
+if (iFirstVis < 0)
+    if (y >= winTop)
+        iFirstVis = iHeader;
             }
 
-            var getY = function( i ) {
-                return offset( _aHeaders[ i ].elem ).top
-            };
-            var fontC = function( color ) {
-                return "<font color='#" + color + "'>";
-            }
+var getY = function( i ) {
+    return offset( _aHeaders[ i ].elem ).top
+};
+var fontC = function( color ) {
+    return "<font color='#" + color + "'>";
+}
 
 var debug = document.getElementById('debug');
 var y0 = getY( 0 );
@@ -193,30 +193,51 @@ debug.innerHTML = ''
 + '[1]: ' + fontC('F00') + y1 + '</font> + ' + fontC('0C0') + _aHeaders[ 1 ].height + '</font> = ' + fontC('00C') + (y1 - winTop) + '</font><br>'
 + '[2]: ' + fontC('F00') + y2 + '</font> + ' + fontC('0C0') + _aHeaders[ 2 ].height + '</font> = ' + fontC('00C') + (y2 - winTop) + '</font><br>'
 + '[3]: ' + fontC('F00') + y3 + '</font> + ' + fontC('0C0') + _aHeaders[ 3 ].height + '</font> = ' + fontC('00C') + (y3 - winTop) + '</font><br>'
-+ 'Firs ' + iFirstVis + '<br>'
-+ 'Last ' + iLastVis  + '<br>'
++ 'Last: [' + iLastVis  + ']<br>'
++ 'First:[' + iFirstVis + ']<br>'
 ;
+// DEBUG
+
             if( iLastVis >= 0 )
             {
                 var elem = _aHeaders[ iLastVis ].elem;
-                elem.classList.add( 'fixed' );
-                elem.style.top = '0px';
+                    elem.classList.add( 'fixed' );
+                    elem.style.top = '0px';
 
-                // Need to check if the next elem is off the top of the screen
-                // Since headers can overlap
-                if (iLastVis < (nHeaders - 1))
+                // We also need to adjust the height
+                // so that when new fixed top == 0, that the
+                // conent below still appears at the original location
+
+
+                // Need to check if the next elem is off the top of the screen since headers can overlap
+                var iNext = iLastVis + 1;
+                if (iNext < nHeader)
                 {
-                }
+                    var eNext = _aHeaders[ iNext ].elem;
+                    var yNext = offset( eNext ).top;
+                    if ((yNext - winTop) < 0) // or hNext)
+                    {
+                        eNext.classList.add( 'fixed' );
+                        eNext.style.top = '0px';
+
+                        elem.classList.remove( 'fixed' );
+                    }
+                    else if (iLastVis == 0)
+                    {
+                        var hBA = _aHeaders[ iLastVis+1 ].top - _aHeaders[ iLastVis ].top;
+                        var h0  = _aHeaders[ iLastVis].height;
+                        var hT0 = winTop - _aHeaders[ iLastVis ].top;
+//elem.style.height = hBA - hT0 - h0;
 /*
-                if (iLastVis > 1) // (nHeaders -1) )
-                {
-                    var iPrev = iLastVis - 1;
-                    var ePrev = _aHeaders[ iLastVis ].elem;
-                    var yPrev = offset( ePrev ).top;
-                    console.log( "[%d]: y=%d", iPrev   , yPrev );
-                    console.log( "[%d]: y=%d", iLastVis, offset( elem ).top );
-                }
+                        var hT0 = winTop - _aHeaders[ iLastVis ].top; // delta
+                        var h0    = _aHeaders[ iLastVis].height;
+                        if (hT0 < h0)
+                            elem.style.height = (h0 + hT0) + 'px';
+                        else
+                            elem.style.height = h0 + 'px';
 */
+                    }
+                }
             }
         };
 

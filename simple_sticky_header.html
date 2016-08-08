@@ -127,19 +127,18 @@
                 tHeader = aHeaders[ iHeader ];
 
                 var obj = wrap( tHeader, 'div' );
-                var par = tHeader.parentNode;
-                par.setAttribute( 'class', '_sticky_header_' ); // dummy class so we know is auto-inserted
+                var div = tHeader.parentNode;
+                div.setAttribute( 'class', '_sticky_header_' ); // dummy class so we know is auto-inserted
 
-                var y   = offset( par ).top;
-                var h   = outerHeight( obj ); //.clientHeight;
+                var y   = offset( div ).top;
+                var h   = obj.clientHeight; // outerHeight( obj );
 
-                par.style.height = h + "px";
-
+                div.style.height = h + "px";
 
                 var sticky = {
                     height: h,  // original height
                     top   : y,  // original position
-                    elem  : par // injected parent that we will adjust styles on
+                    elem  : div // injected parent that we will adjust styles on
                 };
                 _aHeaders.push( sticky ); // stash in array so when we scroll we can adjust ALL the sticky header's y position
             }
@@ -168,19 +167,20 @@ console.log( "Sticky Headers detected: " + _aHeaders.length );
                 var h      = sticky.height;
                 var y      = sticky.top;
 
-                if (y < winTop) // we need (y-h) otherwise will scroll off top by the height
+                if (y < winTop)
                     iLastVis = iHeader;
-                if (iFirstVis < 0)
-                    if (y >= winTop)
-                        iFirstVis = iHeader;
+// DEBUG
+if (iFirstVis < 0)
+    if (y >= winTop)
+        iFirstVis = iHeader;
             }
 
-            var getY = function( i ) {
-                return offset( _aHeaders[ i ].elem ).top
-            };
-            var fontC = function( color ) {
-                return "<font color='#" + color + "'>";
-            }
+var getY = function( i ) {
+    return offset( _aHeaders[ i ].elem ).top
+};
+var fontC = function( color ) {
+    return "<font color='#" + color + "'>";
+}
 
 var debug = document.getElementById('debug');
 var y0 = getY( 0 );
@@ -196,11 +196,13 @@ debug.innerHTML = ''
 + 'Last: [' + iLastVis  + ']<br>'
 + 'First:[' + iFirstVis + ']<br>'
 ;
+// DEBUG
+
             if( iLastVis >= 0 )
             {
                 var elem = _aHeaders[ iLastVis ].elem;
-                elem.classList.add( 'fixed' );
-                elem.style.top = '0px';
+                    elem.classList.add( 'fixed' );
+                    elem.style.top = '0px';
             }
         };
 

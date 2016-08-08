@@ -1,0 +1,317 @@
+<html>
+<head>
+<style>
+.fixed { /* ACTIVE sticky header; See: .fixed, .sticky */
+    /* Mandatory styles to make the active sticky work */
+    background:  #FFF; /* if we don't have a background, this fixed header will be see through and overlap with holes */
+    position  : fixed; /* force to be at top of page */
+
+    /* Optional -- remaining styles should match the .sticky  header */
+    text-align:   center;
+    width     :     99%;
+}
+.sticky { /* POTENTIAL sticky header; See: .fixed, .sticky */
+    /* Designate header as being a "sticky" header -- if it scrolls off the top of the page, it will "stick" to the top of the page until the next sticky header reaches it.
+       NOTE:  This is not the ACTIVE sticky header -- see .fixed for that */
+    /* Mandatory */
+    background:     #FFF;
+    position  : relative; /* when active will change parent div to be fixed */
+
+    /* Optional -- remaining styles should also match the .active header */
+    text-align:   center;
+    width     :      99%;
+}
+.debug {
+    z-index :    1;
+    position:fixed;
+    top     :  0px;
+    color           : #000;
+    background-color: #FFF;
+
+    margin       : 1px 1px 1px 1px;
+    border       : 1px solid;
+    border-radius: 8px;
+    padding      : 1px;
+}
+
+</style>
+<script>
+    // ========== Utility ==========
+        // http://stackoverflow.com/questions/18953144/how-do-i-get-the-offset-top-value-of-an-element-without-using-jquery
+        function offset( elem )
+        {
+            var de   = document.documentElement;
+            var box  = elem.getBoundingClientRect();
+            var top  = box.top  + window.pageYOffset - de.clientTop ;
+            var left = box.left + window.pageXOffset - de.clientLeft;
+            return { top: top, left: left };
+        }
+
+        function outerHeight( elem )
+        {
+            var h = elem.offsetHeight;
+            var s = window.getComputedStyle( elem );
+            var t = parseInt( s.marginTop );
+            var b = parseInt( s.marginBottom );
+            if( isNaN( t ) ) t = 0;
+            if( isNaN( b ) ) b = 0;
+
+            var h1 = t + h + b;
+            var h2 = elem.clientHeight;
+            if( h1 != h2 )
+                console.log( "WARNING: heights differ: %o != %o", h1, h2 );
+
+            // TODO: This doesn't get the padding so will accumulate error!
+            return h1;
+        }
+
+        // http://stackoverflow.com/questions/11193453/find-the-vertical-position-of-scrollbar-without-jquery
+        function scrollTop () { return (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement || document.body.parentNode || document.body).scrollTop  }
+
+        // *note* This SO is incorrect:
+        //     http://stackoverflow.com/questions/31472754/wrap-a-around-div-without-jquery
+        // type: 'div', 'a', etc.,
+        function wrap( child, type  )
+        {
+            /*
+                Before:                     After:
+                    biological_parent           biological_parent
+                        child                       foster_parent
+                                                        child
+            */
+            var biological = child.parentNode;
+            var foster = document.createElement( type );
+            biological.insertBefore( foster, child );
+
+            // http://stackoverflow.com/questions/7555442/move-an-element-to-another-parent-after-changing-its-id
+            foster.appendChild( child ); // move, not copy
+
+            return child;
+        }
+
+    // ---------- Implementation ----------
+    /*
+        Requries 2 css styles
+
+        .fixed    { position: fixed   ; background: #FFF; } // active sticky header
+        .sticky   { position: relative; background: #FFF; } // designate this header as sticky
+
+        <div class='sticky'> Header 1 </div>
+        <div class='sticky'> Header 2 </div>
+        <div class='sticky'> Header 3 </div>
+    */
+    // Inspired from: https://codepen.io/joeaugie/pen/RWbPzo
+    var StickyHeaders = (function() {
+        var _window = window;
+        /*
+            var Sticky =
+            {
+                height : 0,        // original height
+                top    : 0,        // original position
+                elem   : undefined // original div element
+            };
+        */
+        var _aHeaders = []; // array of Sticky objects
+
+        var doLoad = function( classSticky )
+        {
+            // iterate over each element of class 'classSticky' ("sticky")
+            // http://stackoverflow.com/questions/5897122/accessing-elements-by-type-on-javascript
+            var aHeaders = document.getElementsByClassName( classSticky );
+            var nHeaders = aHeaders.length;
+            var iHeader  = 0;
+            var tHeader  ;
+
+            for( ; iHeader < nHeaders; ++iHeader )
+            {
+                tHeader = aHeaders[ iHeader ];
+
+                var obj = wrap( tHeader, 'div' );
+                var par = tHeader.parentNode;
+                par.setAttribute( 'class', '_sticky_header_' ); // dummy class so we know is auto-inserted
+
+                var y   = offset( par ).top;
+                var h   = outerHeight( obj ); //.clientHeight;
+
+                par.style.height = h + "px";
+
+
+                var sticky = {
+                    height: h,  // original height
+                    top   : y,  // original position
+                    elem  : par // injected parent that we will adjust styles on
+                };
+                _aHeaders.push( sticky ); // stash in array so when we scroll we can adjust ALL the sticky header's y position
+            }
+console.log( "Sticky Headers detected: " + _aHeaders.length );
+
+            // Add callback when scrolling starts/stops
+            window.onscroll = function()
+            {
+                doScroll();
+            }
+        };
+
+        var doScroll = function() {
+            var winTop   = scrollTop();
+            var nHeader  = _aHeaders.length;
+
+            var iLastVis = -1;
+            var iFirstVis= -1;
+
+            for( var iHeader = 0; iHeader < nHeader; ++iHeader )
+            {
+                var sticky = _aHeaders[ iHeader ];
+                var elem   = sticky.elem;
+                elem.classList.remove( 'fixed' );
+
+                var h      = sticky.height;
+                var y      = sticky.top;
+
+                if (y < winTop) // we need (y-h) otherwise will scroll off top by the height
+                    iLastVis = iHeader;
+                if (iFirstVis < 0)
+                    if (y >= winTop)
+                        iFirstVis = iHeader;
+            }
+
+            var getY = function( i ) {
+                return offset( _aHeaders[ i ].elem ).top
+            };
+            var fontC = function( color ) {
+                return "<font color='#" + color + "'>";
+            }
+
+var debug = document.getElementById('debug');
+var y0 = getY( 0 );
+var y1 = getY( 1 );
+var y2 = getY( 2 );
+var y3 = getY( 3 );
+debug.innerHTML = ''
++ 'Top: ' + window.window.pageYOffset + '<br>'
++ '[0]: ' + fontC('F00') + y0 + '</font> + ' + fontC('0C0') + _aHeaders[ 0 ].height + '</font> = ' + fontC('00C') + (y0 - winTop) + '</font><br>'
++ '[1]: ' + fontC('F00') + y1 + '</font> + ' + fontC('0C0') + _aHeaders[ 1 ].height + '</font> = ' + fontC('00C') + (y1 - winTop) + '</font><br>'
++ '[2]: ' + fontC('F00') + y2 + '</font> + ' + fontC('0C0') + _aHeaders[ 2 ].height + '</font> = ' + fontC('00C') + (y2 - winTop) + '</font><br>'
++ '[3]: ' + fontC('F00') + y3 + '</font> + ' + fontC('0C0') + _aHeaders[ 3 ].height + '</font> = ' + fontC('00C') + (y3 - winTop) + '</font><br>'
++ 'Firs ' + iFirstVis + '<br>'
++ 'Last ' + iLastVis  + '<br>'
+;
+            if( iLastVis >= 0 )
+            {
+                var elem = _aHeaders[ iLastVis ].elem;
+                elem.classList.add( 'fixed' );
+                elem.style.top = '0px';
+
+                // Need to check if the next elem is off the top of the screen
+                // Since headers can overlap
+                if (iLastVis < (nHeaders - 1))
+                {
+                }
+/*
+                if (iLastVis > 1) // (nHeaders -1) )
+                {
+                    var iPrev = iLastVis - 1;
+                    var ePrev = _aHeaders[ iLastVis ].elem;
+                    var yPrev = offset( ePrev ).top;
+                    console.log( "[%d]: y=%d", iPrev   , yPrev );
+                    console.log( "[%d]: y=%d", iLastVis, offset( elem ).top );
+                }
+*/
+            }
+        };
+
+        return {
+            load: doLoad
+        };
+    })();
+    function onLoad()
+    {
+console.log( "Loading..." );
+        StickyHeaders.load( 'sticky' );
+console.log( "done!" );
+    }
+</script>
+<body onload='onLoad();'>
+<div class='debug' id='debug'></div>
+<pre>
+<div class='sticky'><hr>Header A<hr></div>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Tu vero, inquam, ducas licet, si sequetur; Quod quidem iam fit etiam in Academia. Ratio quidem vestra sic cogit. Quid Zeno? Tu vero, inquam, ducas licet, si sequetur; Qui est in parvis malis. Duo Reges: constructio interrete. Non laboro, inquit, de nomine. </p>
+
+<div class='sticky'><hr>Header B<hr></div>
+<p>Ut pulsi recurrant? Sed residamus, inquit, si placet. Certe non potest. Quod cum dixissent, ille contra. Idem iste, inquam, de voluptate quid sentit? </p>
+
+<div class='sticky'><hr>Header C<hr></div>
+<p>Quae est igitur causa istarum angustiarum? Istic sum, inquit. Quod totum contra est. Bestiarum vero nullum iudicium puto. Sed ad illum redeo. </p>
+
+<div class='sticky'><hr>Header D<hr></div>
+<p>Audeo dicere, inquit. A mene tu? Qua tu etiam inprudens utebare non numquam. Falli igitur possumus. Vide, quantum, inquam, fallare, Torquate. Praeclare hoc quidem. Erat enim Polemonis. </p>
+
+<div class='sticky'><hr>Header E<hr></div>
+<p>Ratio quidem vestra sic cogit. Itaque his sapiens semper vacabit. Quam nemo umquam voluptatem appellavit, appellat; Suo enim quisque studio maxime ducitur. </p>
+
+<div class='sticky'><hr>Header F<hr></div>
+<p>Iam id ipsum absurdum, maximum malum neglegi. Quis hoc dicit? Bonum integritas corporis: misera debilitas. Vide, quantum, inquam, fallare, Torquate. Confecta res esset. Facillimum id quidem est, inquam. Quonam modo? Non autem hoc: igitur ne illud quidem. </p>
+
+<div class='sticky'><hr>Header G<hr></div>
+<p>Si quae forte-possumus. Zenonis est, inquam, hoc Stoici. Ille enim occurrentia nescio quae comminiscebatur; Nos cum te, M. </p>
+
+<div class='sticky'><hr>Header H<hr></div>
+<p>Gloriosa ostentatio in constituendo summo bono. An nisi populari fama? Memini vero, inquam; Tria genera bonorum; Sed in rebus apertissimis nimium longi sumus. </p>
+
+<div class='sticky'><hr>Header I<hr></div>
+<p>Velut ego nunc moveor. Is es profecto tu. Cur, nisi quod turpis oratio est? Recte, inquit, intellegis. Beatus sibi videtur esse moriens. </p>
+
+<div class='sticky'><hr>Header J<hr></div>
+<p>Qualem igitur hominem natura inchoavit? Eademne, quae restincta siti? Negare non possum. Nulla erit controversia. </p>
+
+<div class='sticky'><hr>Header K<hr></div>
+<p>Ille incendat? Numquam facies. Erat enim Polemonis. Si enim ad populum me vocas, eum. Non laboro, inquit, de nomine. Quonam modo? </p>
+
+<div class='sticky'><hr>Header L<hr></div>
+<p>Bonum patria: miserum exilium. Immo alio genere; Memini vero, inquam; Quo tandem modo? Tria genera bonorum; </p>
+
+<div class='sticky'><hr>Header M<hr></div>
+<p>Sullae consulatum? Egone quaeris, inquit, quid sentiam? Falli igitur possumus. Quid est enim aliud esse versutum? Immo videri fortasse. </p>
+
+<div class='sticky'><hr>Header N<hr></div>
+<p>Respondent extrema primis, media utrisque, omnia omnibus. Idemne, quod iucunde? Fortemne possumus dicere eundem illum Torquatum? Quae cum dixisset paulumque institisset, Quid est? Respondeat totidem verbis. Nunc haec primum fortasse audientis servire debemus. Quonam modo? </p>
+
+<div class='sticky'><hr>Header O<hr></div>
+<p>Primum quid tu dicis breve? An eiusdem modi? Quonam modo? Efficiens dici potest. </p>
+
+<div class='sticky'><hr>Header P<hr></div>
+<p>Igitur ne dolorem quidem. Expectoque quid ad id, quod quaerebam, respondeas. Equidem e Cn. Simus igitur contenti his. </p>
+
+<div class='sticky'><hr>Header Q<hr></div>
+<p>Deinde dolorem quem maximum? Quorum altera prosunt, nocent altera. Nunc agendum est subtilius. Hic ambiguo ludimur. Esse enim, nisi eris, non potes. Quid me istud rogas? Restinguet citius, si ardentem acceperit. </p>
+
+<div class='sticky'><hr>Header R<hr></div>
+<p>Confecta res esset. Non laboro, inquit, de nomine. Restatis igitur vos; Proclivi currit oratio. </p>
+
+<div class='sticky'><hr>Header S<hr></div>
+<p>Quae ista amicitia est? Paria sunt igitur. Prioris generis est docilitas, memoria; Tubulo putas dicere? Sed hoc sane concedamus. Velut ego nunc moveor. </p>
+
+<div class='sticky'><hr>Header T<hr></div>
+<p>Summum ením bonum exposuit vacuitatem doloris; Ego vero isti, inquam, permitto. Inde igitur, inquit, ordiendum est. Cur iustitia laudatur? Eademne, quae restincta siti? Num quid tale Democritus? An eiusdem modi? Istam voluptatem, inquit, Epicurus ignorat? </p>
+
+<div class='sticky'><hr>Header U<hr></div>
+<p>Neutrum vero, inquit ille. Explanetur igitur. Sed haec in pueris; Quid de Pythagora? Summus dolor plures dies manere non potest? Comprehensum, quod cognitum non habet? </p>
+
+<div class='sticky'><hr>Header V<hr></div>
+<p>Proclivi currit oratio. Quamquam tu hanc copiosiorem etiam soles dicere. Sed quot homines, tot sententiae; Primum quid tu dicis breve? De vacuitate doloris eadem sententia erit. Tollenda est atque extrahenda radicitus. Haeret in salebra. </p>
+
+<div class='sticky'><hr>Header W<hr></div>
+<p>Quantum Aristoxeni ingenium consumptum videmus in musicis? Primum in nostrane potestate est, quid meminerimus? Poterat autem inpune; Itaque ad tempus ad Pisonem omnes. Compensabatur, inquit, cum summis doloribus laetitia. </p>
+
+<div class='sticky'><hr>Header X<hr></div>
+<p>Invidiosum nomen est, infame, suspectum. Cave putes quicquam esse verius. Sed ille, ut dixi, vitiose. Confecta res esset. Primum divisit ineleganter; Tenent mordicus. Apparet statim, quae sint officia, quae actiones. An tu me de L. </p>
+
+<div class='sticky'><hr>Header Y<hr></div>
+<p>Istic sum, inquit. Quae contraria sunt his, malane? Si longus, levis dictata sunt. Si longus, levis. Tubulo putas dicere? Qua tu etiam inprudens utebare non numquam. </p>
+
+<div class='sticky'><hr>Header Z<hr></div>
+<p>Quorum sine causa fieri nihil putandum est. Erat enim Polemonis. Putabam equidem satis, inquit, me dixisse. Recte dicis; Quare attende, quaeso. </p>
+</pre>
+
+</body>
+

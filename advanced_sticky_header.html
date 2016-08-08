@@ -102,7 +102,34 @@
     */
     // Inspired from: https://codepen.io/joeaugie/pen/RWbPzo
     var StickyHeaders = (function() {
-        var _window = window;
+
+        // DEBUG
+        var getY = function( i ) {
+            return offset( _aHeaders[ i ].elem ).top
+        };
+        var fontC = function( color ) {
+            return "<font color='#" + color + "'>";
+        }
+        function Debug( iFirstVis, iLastVis )
+        {
+            var winTop = window.pageYOffset;
+            var debug  = document.getElementById('debug');
+            var y0 = getY( 0 );
+            var y1 = getY( 1 );
+            var y2 = getY( 2 );
+            var y3 = getY( 3 );
+            debug.innerHTML = ''
+            + 'Top: ' + window.window.pageYOffset + '<br>'
+            + '[0]: ' + fontC('F00') + y0 + '</font> + ' + fontC('0C0') + _aHeaders[ 0 ].height + '</font> = ' + fontC('00C') + (y0 - winTop) + '</font><br>'
+            + '[1]: ' + fontC('F00') + y1 + '</font> + ' + fontC('0C0') + _aHeaders[ 1 ].height + '</font> = ' + fontC('00C') + (y1 - winTop) + '</font><br>'
+            + '[2]: ' + fontC('F00') + y2 + '</font> + ' + fontC('0C0') + _aHeaders[ 2 ].height + '</font> = ' + fontC('00C') + (y2 - winTop) + '</font><br>'
+            + '[3]: ' + fontC('F00') + y3 + '</font> + ' + fontC('0C0') + _aHeaders[ 3 ].height + '</font> = ' + fontC('00C') + (y3 - winTop) + '</font><br>'
+            + 'Last: [' + iLastVis  + ']<br>'
+            + 'First:[' + iFirstVis + ']<br>'
+            ;
+        }
+        // DEBUG
+
         /*
             var Sticky =
             {
@@ -142,7 +169,9 @@
                 };
                 _aHeaders.push( sticky ); // stash in array so when we scroll we can adjust ALL the sticky header's y position
             }
+
 console.log( "Sticky Headers detected: " + _aHeaders.length );
+Debug( -1, -1 );
 
             // Add callback when scrolling starts/stops
             window.onscroll = function()
@@ -175,28 +204,7 @@ if (iFirstVis < 0)
         iFirstVis = iHeader;
             }
 
-var getY = function( i ) {
-    return offset( _aHeaders[ i ].elem ).top
-};
-var fontC = function( color ) {
-    return "<font color='#" + color + "'>";
-}
-
-var debug = document.getElementById('debug');
-var y0 = getY( 0 );
-var y1 = getY( 1 );
-var y2 = getY( 2 );
-var y3 = getY( 3 );
-debug.innerHTML = ''
-+ 'Top: ' + window.window.pageYOffset + '<br>'
-+ '[0]: ' + fontC('F00') + y0 + '</font> + ' + fontC('0C0') + _aHeaders[ 0 ].height + '</font> = ' + fontC('00C') + (y0 - winTop) + '</font><br>'
-+ '[1]: ' + fontC('F00') + y1 + '</font> + ' + fontC('0C0') + _aHeaders[ 1 ].height + '</font> = ' + fontC('00C') + (y1 - winTop) + '</font><br>'
-+ '[2]: ' + fontC('F00') + y2 + '</font> + ' + fontC('0C0') + _aHeaders[ 2 ].height + '</font> = ' + fontC('00C') + (y2 - winTop) + '</font><br>'
-+ '[3]: ' + fontC('F00') + y3 + '</font> + ' + fontC('0C0') + _aHeaders[ 3 ].height + '</font> = ' + fontC('00C') + (y3 - winTop) + '</font><br>'
-+ 'Last: [' + iLastVis  + ']<br>'
-+ 'First:[' + iFirstVis + ']<br>'
-;
-// DEBUG
+            Debug( iFirstVis, iLastVis );
 
             if( iLastVis >= 0 )
             {
